@@ -176,6 +176,14 @@
         .item-val { font-size: 0.9rem; font-family: ui-monospace, monospace; font-weight: 500; }
         .font-val { font-family: inherit; }
 
+        /* Controls (Hue & Saturation) */
+        .controls-group { margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px; background: rgba(255, 255, 255, 0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--ui-border); }
+        .control-row { display: flex; flex-direction: column; }
+        .control-row label { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--ui-text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+        .slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; background: rgba(255,255,255,0.1); }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid var(--ui-panel); }
+        .hue-slider { background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); }
+
         /* Sidebar Extra Actions (Save, CSS, JSON) */
         .sidebar-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 32px; }
         .sidebar-btn { 
@@ -502,6 +510,18 @@
             <p>Production-ready palettes & font pairings.</p>
         </div>
 
+        <div class="section-title">Controls</div>
+        <div class="controls-group">
+            <div class="control-row">
+                <label>Base Hue <span id="hue-val"></span></label>
+                <input type="range" id="hue-slider" min="0" max="359" class="slider hue-slider">
+            </div>
+            <div class="control-row">
+                <label>Saturation <span id="sat-val"></span></label>
+                <input type="range" id="sat-slider" min="0" max="100" class="slider sat-slider">
+            </div>
+        </div>
+
         <div class="section-title">Typography</div>
         <div class="list-group" id="font-list">
             <!-- Fonts populated by JS -->
@@ -641,6 +661,7 @@
                 secondary: { val: '#f59e0b', locked: false },
                 accent: { val: '#10b981', locked: false }
             },
+            controls: { hue: Math.floor(Math.random() * 360), sat: 80 },
             favorites: JSON.parse(localStorage.getItem('chromatype_favs')) || []
         };
 
@@ -707,22 +728,35 @@
         };
 
         // --- GENERATION LOGIC ---
-        const generatePalette = () => {
-            let baseHue = Math.floor(Math.random() * 360);
+        const generatePalette = (randomizeHue = true) => {
+            if (randomizeHue) {
+                state.controls.hue = Math.floor(Math.random() * 360);
+            }
+            let baseHue = state.controls.hue;
+            let baseSat = state.controls.sat;
+
             const lockedColorKeys = Object.keys(state.colors).filter(k => state.colors[k].locked);
             if (lockedColorKeys.length > 0) {
                 baseHue = hexToHsl(state.colors[lockedColorKeys[0]].val).h;
+                state.controls.hue = Math.round(baseHue);
             }
+
+            // Update UI Sliders
+            document.getElementById('hue-slider').value = state.controls.hue;
+            document.getElementById('sat-slider').value = state.controls.sat;
+            document.getElementById('hue-val').innerText = state.controls.hue + '°';
+            document.getElementById('sat-val').innerText = state.controls.sat + '%';
+            document.getElementById('sat-slider').style.background = `linear-gradient(to right, #808080, hsl(${state.controls.hue}, 100%, 50%))`;
 
             const isDark = Math.random() > 0.5;
             let newColors = { ...state.colors };
 
-            if (!newColors.primary.locked) newColors.primary.val = hslToHex(baseHue, 80, 55);
-            if (!newColors.secondary.locked) newColors.secondary.val = hslToHex((baseHue + 180) % 360, 75, 50);
-            if (!newColors.accent.locked) newColors.accent.val = hslToHex((baseHue + (Math.random()>0.5?120:240)) % 360, 85, 60);
+            if (!newColors.primary.locked) newColors.primary.val = hslToHex(baseHue, baseSat, 55);
+            if (!newColors.secondary.locked) newColors.secondary.val = hslToHex((baseHue + 180) % 360, Math.max(0, baseSat - 5), 50);
+            if (!newColors.accent.locked) newColors.accent.val = hslToHex((baseHue + (Math.random()>0.5?120:240)) % 360, Math.min(100, baseSat + 5), 60);
             
-            if (!newColors.bg.locked) newColors.bg.val = hslToHex(baseHue, 15, isDark ? 10 : 96);
-            if (!newColors.text.locked) newColors.text.val = hslToHex(baseHue, 10, isDark ? 96 : 10);
+            if (!newColors.bg.locked) newColors.bg.val = hslToHex(baseHue, Math.min(15, baseSat / 4), isDark ? 10 : 96);
+            if (!newColors.text.locked) newColors.text.val = hslToHex(baseHue, Math.min(10, baseSat / 5), isDark ? 96 : 10);
 
             // Enforce Contrast 4.5:1
             if (!newColors.bg.locked || !newColors.text.locked) {
@@ -900,15 +934,25 @@
         };
 
         // Event Listeners
-        document.getElementById('generate-btn').addEventListener('click', generatePalette);
+        document.getElementById('generate-btn').addEventListener('click', () => generatePalette(true));
         
+        document.getElementById('hue-slider').addEventListener('input', (e) => {
+            state.controls.hue = parseInt(e.target.value);
+            generatePalette(false);
+        });
+
+        document.getElementById('sat-slider').addEventListener('input', (e) => {
+            state.controls.sat = parseInt(e.target.value);
+            generatePalette(false);
+        });
+
         document.addEventListener('keydown', e => {
             // Prevent shortcuts from triggering if user is in an input field (best practice)
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             
             if (e.code === 'Space') {
                 e.preventDefault();
-                generatePalette();
+                generatePalette(true);
             } else if (e.key.toLowerCase() === 's') {
                 e.preventDefault();
                 saveToFavorites();
