@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromaType | Palette & Font Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lato:wght@400;700&family=Lora:ital,wght@0,400;0,600&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600&family=Oswald:wght@500;600&family=Playfair+Display:wght@600;700&family=Poppins:wght@500;600&family=Roboto+Slab:wght@500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* App UI Colors */
+            --ui-bg: #0f1115;
+            --ui-panel: #1a1d24;
+            --ui-border: #2e333d;
+            --ui-text: #e2e8f0;
+            --ui-text-muted: #94a3b8;
+            --ui-accent: #3b82f6;
+
+            /* Generated Variables (Defaults) */
+            --gen-bg: #ffffff;
+            --gen-text: #0f172a;
+            --gen-primary: #3b82f6;
+            --gen-secondary: #f59e0b;
+            --gen-accent: #10b981;
+            
+            --gen-font-head: 'Playfair Display', serif;
+            --gen-font-body: 'Inter', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--ui-bg);
+            color: var(--ui-text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Controls */
+        aside {
+            width: 380px;
+            background-color: var(--ui-panel);
+            border-right: 1px solid var(--ui-border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 50;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+        }
+
+        .brand { margin-bottom: 32px; }
+        .brand h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.025em; }
+        .brand p { font-size: 0.875rem; color: var(--ui-text-muted); margin-top: 4px; }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--ui-text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        /* Lists & Items */
+        .list-group { margin-bottom: 32px; display: flex; flex-direction: column; gap: 8px; }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            transition: border-color 0.2s;
+        }
+        .item-row:hover { border-color: rgba(255,255,255,0.2); }
+
+        .swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin-right: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            transition: background-color 0.4s ease;
+        }
+
+        .item-info { flex-grow: 1; display: flex; flex-direction: column; }
+        .item-label { font-size: 0.7rem; color: var(--ui-text-muted); text-transform: uppercase; }
+        .item-val { font-size: 0.9rem; font-family: ui-monospace, monospace; font-weight: 500; }
+        .font-val { font-family: inherit; }
+
+        /* Action Buttons */
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--ui-text-muted);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .icon-btn:hover { color: var(--ui-text); background: rgba(255,255,255,0.1); }
+        .icon-btn.locked { color: var(--ui-accent); }
+        .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+        .copy-feedback {
+            position: absolute;
+            right: 100%;
+            margin-right: 8px;
+            background: var(--ui-accent);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .copy-feedback.show { opacity: 1; }
+
+        .generate-btn {
+            background-color: var(--ui-text);
+            color: var(--ui-bg);
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            margin-top: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .generate-btn:active { transform: scale(0.98); }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn kbd {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-family: inherit;
+        }
+
+        /* Interactive Preview Area */
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-banner {
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--ui-border);
+            z-index: 20;
+            position: relative;
+        }
+        .cta-banner a { color: #fff; font-weight: 600; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.4); }
+        .cta-banner a:hover { text-decoration-color: #fff; }
+
+        .preview-scroll-wrapper {
+            flex-grow: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            background-color: var(--gen-bg);
+            background-image: 
+                radial-gradient(at 0% 0%, color-mix(in srgb, var(--gen-primary) 12%, transparent) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, color-mix(in srgb, var(--gen-secondary) 12%, transparent) 0px, transparent 50%);
+            color: var(--gen-text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            scroll-behavior: smooth;
+        }
+
+        /* Mouse Follower Glow */
+        #mouse-glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, color-mix(in srgb, var(--gen-accent) 15%, transparent) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .preview-content {
+            position: relative;
+            z-index: 2;
+            padding: 10vh 40px 100px;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Section 1: Hero */
+        .hero {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 120px;
+            position: relative;
+        }
+
+        .hero h2 {
+            font-family: var(--gen-font-head);
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 1.1;
+            margin-bottom: 24px;
+            transition: color 0.4s ease;
+            max-width: 900px;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero h2 span { color: var(--gen-primary); transition: color 0.4s ease; }
+
+        .hero p {
+            font-family: var(--gen-font-body);
+            font-size: clamp(1.125rem, 2vw, 1.375rem);
+            line-height: 1.6;
+            margin-bottom: 40px;
+            max-width: 600px;
+            opacity: 0.85;
+        }
+
+        .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; z-index: 10; }
+
+        .btn-preview {
+            font-family: var(--gen-font-body);
+            padding: 16px 36px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background-color: var(--gen-primary);
+            color: var(--gen-bg);
+            border: 2px solid var(--gen-primary);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px var(--gen-primary); }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--gen-text);
+            border: 2px solid var(--gen-secondary);
+        }
+        .btn-secondary:hover { 
+            background-color: color-mix(in srgb, var(--gen-secondary) 10%, transparent); 
+            transform: translateY(-2px);
+        }
+
+        /* Button Ripple / Fade-in Effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: ripple-anim 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* Floating Shapes */
+        .decorative-shapes {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .shape { 
+            position: absolute;
+            transition: background-color 0.4s ease; 
+            opacity: 0.8;
+            filter: blur(2px);
+        }
+        .shape-1 { 
+            width: 120px; height: 120px; 
+            background-color: var(--gen-primary); 
+            border-radius: 100%; 
+            top: -10%; left: 10%;
+            animation: float-1 8s ease-in-out infinite; 
+        }
+        .shape-2 { 
+            width: 80px; height: 80px; 
+            background-color: var(--gen-secondary); 
+            border-radius: 20px; 
+            bottom: 10%; right: 15%;
+            animation: float-2 10s ease-in-out infinite alternate; 
+        }
+        .shape-3 { 
+            width: 150px; height: 150px; 
+            background-color: var(--gen-accent); 
+            border-radius: 100% 30% 100% 30%; 
+            top: 60%; left: 20%;
+            animation: pulse-rotate 12s linear infinite; 
+        }
+
+        @keyframes float-1 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+        }
+        @keyframes float-2 {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-40px) rotate(45deg); }
+        }
+        @keyframes pulse-rotate {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* Extended Sections */
+        .extended-section {
+            width: 100%;
+            padding: 60px 0;
+            border-top: 1px solid color-mix(in srgb, var(--gen-text) 15%, transparent);
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+        
+        .section-header h3 {
+            font-family: var(--gen-font-head);
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .section-header p {
+            font-family: var(--gen-font-body);
+            opacity: 0.7;
+        }
+
+        /* Typography Showcase */
+        .typo-grid { display: flex; flex-direction: column; gap: 24px; font-family: var(--gen-font-head); }
+        .typo-grid div { display: flex; align-items: baseline; gap: 24px; border-bottom: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent); padding-bottom: 12px; }
+        .typo-label { font-family: var(--gen-font-body); font-size: 0.8rem; opacity: 0.5; width: 60px; text-transform: uppercase; }
+        .typo-grid h1 { font-size: 3.5rem; }
+        .typo-grid h2 { font-size: 2.5rem; }
+        .typo-grid h3 { font-size: 2rem; }
+        .typo-grid p { font-family: var(--gen-font-body); font-size: 1.125rem; line-height: 1.6; }
+
+        /* UI Elements Showcase */
+        .ui-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        .ui-card {
+            background: color-mix(in srgb, var(--gen-text) 5%, var(--gen-bg));
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent);
+            font-family: var(--gen-font-body);
+        }
+        .ui-card h4 { font-family: var(--gen-font-head); font-size: 1.25rem; margin-bottom: 12px; }
+        .ui-card p { font-size: 0.95rem; opacity: 0.8; margin-bottom: 20px; }
+        .badge { 
+            display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+            background: color-mix(in srgb, var(--gen-accent) 20%, transparent); color: var(--gen-accent);
+        }
+
+        /* Gradients Showcase */
+        .gradient-boxes { display: flex; gap: 24px; flex-wrap: wrap; }
+        .grad-box {
+            height: 120px; flex: 1; min-width: 200px;
+            border-radius: 16px;
+            display: flex; align-items: flex-end; padding: 16px;
+            font-family: var(--gen-font-body); font-size: 0.85rem; font-weight: 600;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+        }
+        .grad-1 { background: linear-gradient(135deg, var(--gen-primary), var(--gen-secondary)); color: #fff; }
+        .grad-2 { background: linear-gradient(135deg, var(--gen-secondary), var(--gen-accent)); color: #fff; }
+        .grad-3 { background: linear-gradient(135deg, var(--gen-accent), var(--gen-primary)); color: #fff; }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--ui-text);
+            color: var(--ui-bg);
+            padding: 12px 24px;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            aside { width: 100%; height: 45vh; border-right: none; border-bottom: 1px solid var(--ui-border); box-shadow: none; }
+            .preview-content { padding: 40px 20px 80px; }
+            .hero h2 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="brand">
+            <h1>ChromaType</h1>
+            <p>Production-ready palettes & font pairings.</p>
+        </div>
+
+        <div class="section-title">Typography</div>
+        <div class="list-group" id="font-list">
+            <!-- Fonts populated by JS -->
+        </div>
+
+        <div class="section-title">Color Palette</div>
+        <div class="list-group" id="color-list">
+            <!-- Colors populated by JS -->
+        </div>
+
+        <button class="generate-btn" id="generate-btn">
+            Generate <kbd>Space</kbd>
+        </button>
+    </aside>
+
+    <main>
+        <div class="cta-banner">
+            Love this seamless experience? <a href="#">Let's build your next custom web app or internal system.</a>
+        </div>
+        
+        <div class="preview-scroll-wrapper" id="scroll-wrapper">
+            <div id="mouse-glow"></div>
+            
+            <div class="preview-content">
+                <section class="hero">
+                    <div class="decorative-shapes">
+                        <div class="shape shape-1"></div>
+                        <div class="shape shape-2"></div>
+                        <div class="shape shape-3"></div>
+                    </div>
+                    
+                    <h2>Design that feels <span>inevitable.</span></h2>
+                    <p>A mathematically sound foundation for your next SaaS, portfolio, or digital product. Experience dynamic gradients, crisp typography, and fluid components.</p>
+                    
+                    <div class="hero-actions">
+                        <button class="btn-preview btn-primary" data-toast="System Initialized">Get Started</button>
+                        <button class="btn-preview btn-secondary" data-toast="Docs Opened">View Documentation</button>
+                    </div>
+                </section>
+
+                <section class="extended-section">
+                    <div class="section-header">
+                        <h3>Typography Hierarchy</h3>
+                        <p>Visual rhythm established by the generated font pairings.</p>
+                    </div>
+                    <div class="typo-grid">
+                        <div><span class="typo-label">H1</span><h1>The quick brown fox</h1></div>
+                        <div><span class="typo-label">H2</span><h2>Jumps over the lazy dog</h2></div>
+                        <div><span class="typo-label">H3</span><h3>Five quacking zephyrs</h3></div>
+                        <div><span class="typo-label">Body</span><p>Sphinx of black quartz, judge my vow. The visual equilibrium of a page dictates the user's journey. Contrast, scale, and whitespace operate in concert to deliver clarity.</p></div>
+                    </div>
+                </section>
+
+                <section class="extended-section">
+                    <div class="section-header">
+                        <h3>UI Components</h3>
+                        <p>How the palette maps to interface elements.</p>
+                    </div>
+                    <div class="ui-grid">
+                        <div class="ui-card">
+                            <span class="badge">New Feature</span>
+                            <h4 style="margin-top:16px;">Analytics Dashboard</h4>
+                            <p>Track your conversions and user flows with precision. The accent color highlights key metrics dynamically.</p>
+                            <button class="btn-preview btn-primary" style="padding: 10px 20px; font-size: 0.9rem;" data-toast="Action triggered">Interact</button>
+                        </div>
+                        <div class="ui-card">
+                            <span class="badge" style="background: color-mix(in srgb, var(--gen-secondary) 20%, transparent); color: var(--gen-secondary);">Warning</span>
+                            <h4 style="margin-top:16px;">Storage Limit</h4>
+                            <p>You have reached 80% of your allocated database storage. Upgrade your plan to prevent disruption.</p>
+                            <button class="btn-preview btn-secondary" style="padding: 10px 20px; font-size: 0.9rem;" data-toast="Action triggered">Upgrade</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="extended-section">
+                    <div class="section-header">
+                        <h3>Derived Gradients</h3>
+                        <p>Smooth interpolations between the generated HSL points.</p>
+                    </div>
+                    <div class="gradient-boxes">
+                        <div class="grad-box grad-1">Primary → Secondary</div>
+                        <div class="grad-box grad-2">Secondary → Accent</div>
+                        <div class="grad-box grad-3">Accent → Primary</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        
+        <div id="toast">Action Triggered Successfully</div>
+    </main>
+
+    <!-- SVGs -->
+    <svg style="display:none;">
+        <symbol id="icon-lock-open" viewBox="0 0 24 24">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+        </symbol>
+        <symbol id="icon-lock-closed" viewBox="0 0 24 24">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H18c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10c0-1.1.9-2 2-2h12v10zm-6 9c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </symbol>
+    </svg>
+
+    <script>
+        // --- DATA & STATE ---
+        const FONT_PAIRS = [
+            { head: 'Playfair Display', body: 'Inter' },
+            { head: 'Merriweather', body: 'Open Sans' },
+            { head: 'Montserrat', body: 'Lora' },
+            { head: 'Oswald', body: 'Lato' },
+            { head: 'Poppins', body: 'Inter' },
+            { head: 'Roboto Slab', body: 'Roboto' }
+        ];
+
+        const COLOR_SLOTS = [
+            { id: 'bg', label: 'Background', var: '--gen-bg' },
+            { id: 'text', label: 'Text', var: '--gen-text' },
+            { id: 'primary', label: 'Primary', var: '--gen-primary' },
+            { id: 'secondary', label: 'Secondary', var: '--gen-secondary' },
+            { id: 'accent', label: 'Accent', var: '--gen-accent' }
+        ];
+
+        let state = {
+            fonts: { head: { val: FONT_PAIRS[0].head, locked: false }, body: { val: FONT_PAIRS[0].body, locked: false } },
+            colors: {
+                bg: { val: '#ffffff', locked: false },
+                text: { val: '#0f172a', locked: false },
+                primary: { val: '#3b82f6', locked: false },
+                secondary: { val: '#f59e0b', locked: false },
+                accent: { val: '#10b981', locked: false }
+            }
+        };
+
+        // --- MATH UTILS ---
+        const hslToHex = (h, s, l) => {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        };
+
+        const hexToRgb = hex => {
+            const bigint = parseInt(hex.slice(1), 16);
+            return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+        };
+
+        const hexToHsl = hex => {
+            let { r, g, b } = hexToRgb(hex);
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } 
+            else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        };
+
+        const getLuminance = (r, g, b) => {
+            const a = [r, g, b].map(v => {
+                v /= 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+        };
+
+        const getContrast = (hex1, hex2) => {
+            const rgb1 = hexToRgb(hex1), rgb2 = hexToRgb(hex2);
+            const lum1 = getLuminance(rgb1.r, rgb1.g, rgb1.b);
+            const lum2 = getLuminance(rgb2.r, rgb2.g, rgb2.b);
+            const brightest = Math.max(lum1, lum2), darkest = Math.min(lum1, lum2);
+            return (brightest + 0.05) / (darkest + 0.05);
+        };
+
+        // --- GENERATION LOGIC ---
+        const generatePalette = () => {
+            let baseHue = Math.floor(Math.random() * 360);
+            const lockedColorKeys = Object.keys(state.colors).filter(k => state.colors[k].locked);
+            if (lockedColorKeys.length > 0) {
+                baseHue = hexToHsl(state.colors[lockedColorKeys[0]].val).h;
+            }
+
+            const isDark = Math.random() > 0.5;
+            let newColors = { ...state.colors };
+
+            if (!newColors.primary.locked) newColors.primary.val = hslToHex(baseHue, 80, 55);
+            if (!newColors.secondary.locked) newColors.secondary.val = hslToHex((baseHue + 180) % 360, 75, 50);
+            if (!newColors.accent.locked) newColors.accent.val = hslToHex((baseHue + (Math.random()>0.5?120:240)) % 360, 85, 60);
+            
+            if (!newColors.bg.locked) newColors.bg.val = hslToHex(baseHue, 15, isDark ? 10 : 96);
+            if (!newColors.text.locked) newColors.text.val = hslToHex(baseHue, 10, isDark ? 96 : 10);
+
+            // Enforce Contrast 4.5:1
+            if (!newColors.bg.locked || !newColors.text.locked) {
+                let safetyCount = 0;
+                while (getContrast(newColors.bg.val, newColors.text.val) < 4.5 && safetyCount < 20) {
+                    const bgHsl = hexToHsl(newColors.bg.val);
+                    const txtHsl = hexToHsl(newColors.text.val);
+                    
+                    if (!newColors.text.locked) {
+                        txtHsl.l = bgHsl.l > 50 ? Math.max(0, txtHsl.l - 5) : Math.min(100, txtHsl.l + 5);
+                        newColors.text.val = hslToHex(txtHsl.h, txtHsl.s, txtHsl.l);
+                    } else if (!newColors.bg.locked) {
+                        bgHsl.l = txtHsl.l > 50 ? Math.max(0, bgHsl.l - 5) : Math.min(100, bgHsl.l + 5);
+                        newColors.bg.val = hslToHex(bgHsl.h, bgHsl.s, bgHsl.l);
+                    }
+                    safetyCount++;
+                }
+            }
+
+            if (!state.fonts.head.locked && !state.fonts.body.locked) {
+                const pair = FONT_PAIRS[Math.floor(Math.random() * FONT_PAIRS.length)];
+                state.fonts.head.val = pair.head;
+                state.fonts.body.val = pair.body;
+            }
+
+            state.colors = newColors;
+            render();
+        };
+
+        // --- UI & INTERACTIVITY ---
+        const toggleLock = (type, key) => {
+            state[type][key].locked = !state[type][key].locked;
+            render();
+        };
+
+        const copyText = (text, btnElement) => {
+            const input = document.createElement('textarea');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+
+            const feedback = btnElement.querySelector('.copy-feedback');
+            feedback.classList.add('show');
+            setTimeout(() => feedback.classList.remove('show'), 1500);
+        };
+
+        const render = () => {
+            const fontList = document.getElementById('font-list');
+            const colorList = document.getElementById('color-list');
+            const root = document.documentElement;
+
+            fontList.innerHTML = '';
+            [
+                { id: 'head', label: 'Heading', fallback: 'serif' },
+                { id: 'body', label: 'Body', fallback: 'sans-serif' }
+            ].forEach(f => {
+                const val = state.fonts[f.id].val;
+                const isLocked = state.fonts[f.id].locked;
+                root.style.setProperty(`--gen-font-${f.id}`, `'${val}', ${f.fallback}`);
+                
+                fontList.innerHTML += `
+                    <div class="item-row">
+                        <div class="item-info">
+                            <span class="item-label">${f.label}</span>
+                            <span class="item-val font-val" style="font-family: '${val}', ${f.fallback}">${val}</span>
+                        </div>
+                        <button class="icon-btn ${isLocked ? 'locked' : ''}" onclick="toggleLock('fonts', '${f.id}')" aria-label="Toggle lock">
+                            <svg><use href="#icon-lock-${isLocked ? 'closed' : 'open'}"></use></svg>
+                        </button>
+                    </div>`;
+            });
+
+            colorList.innerHTML = '';
+            COLOR_SLOTS.forEach(c => {
+                const val = state.colors[c.id].val.toUpperCase();
+                const isLocked = state.colors[c.id].locked;
+                root.style.setProperty(c.var, val);
+
+                colorList.innerHTML += `
+                    <div class="item-row">
+                        <div class="swatch" style="background-color: ${val}"></div>
+                        <div class="item-info">
+                            <span class="item-label">${c.label}</span>
+                            <span class="item-val">${val}</span>
+                        </div>
+                        <button class="icon-btn" onclick="copyText('${val}', this)" aria-label="Copy hex">
+                            <span class="copy-feedback">Copied!</span>
+                            <svg><use href="#icon-copy"></use></svg>
+                        </button>
+                        <button class="icon-btn ${isLocked ? 'locked' : ''}" onclick="toggleLock('colors', '${c.id}')" aria-label="Toggle lock">
+                            <svg><use href="#icon-lock-${isLocked ? 'closed' : 'open'}"></use></svg>
+                        </button>
+                    </div>`;
+            });
+        };
+
+        // Event Listeners
+        document.getElementById('generate-btn').addEventListener('click', generatePalette);
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' && e.target === document.body) {
+                e.preventDefault();
+                generatePalette();
+            }
+        });
+
+        // Interactive Buttons (Ripple & Toast)
+        let toastTimeout;
+        const toastEl = document.getElementById('toast');
+        
+        document.querySelectorAll('.btn-preview').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Ripple Effect
+                const x = e.clientX - e.target.getBoundingClientRect().left;
+                const y = e.clientY - e.target.getBoundingClientRect().top;
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+
+                // Toast Fade-in
+                const msg = this.getAttribute('data-toast');
+                toastEl.textContent = msg;
+                toastEl.classList.add('show');
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 2000);
+            });
+        });
+
+        // Mouse Tracker for Glow Effect
+        const glow = document.getElementById('mouse-glow');
+        const scrollArea = document.getElementById('scroll-wrapper');
+        
+        scrollArea.addEventListener('mousemove', e => {
+            glow.style.opacity = '1';
+            const rect = scrollArea.getBoundingClientRect();
+            glow.style.left = `${e.clientX - rect.left}px`;
+            glow.style.top = `${e.clientY - rect.top}px`;
+        });
+        scrollArea.addEventListener('mouseleave', () => glow.style.opacity = '0');
+
+        // Init
+        generatePalette();
+    </script>
+</body>
+</html>
