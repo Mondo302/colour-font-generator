@@ -129,6 +129,8 @@
             z-index: 50;
             box-shadow: 0 24px 48px rgba(0,0,0,0.2);
             color: var(--ui-text);
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         .brand { margin-bottom: 32px; }
@@ -145,7 +147,7 @@
         }
 
         /* Lists & Items */
-        .list-group { margin-bottom: 32px; display: flex; flex-direction: column; gap: 8px; }
+        .list-group { margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px; }
 
         .item-row {
             display: flex;
@@ -173,6 +175,33 @@
         .item-label { font-size: 0.7rem; color: var(--ui-text-muted); text-transform: uppercase; }
         .item-val { font-size: 0.9rem; font-family: ui-monospace, monospace; font-weight: 500; }
         .font-val { font-family: inherit; }
+
+        /* Sidebar Extra Actions (Save, CSS, JSON) */
+        .sidebar-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 32px; }
+        .sidebar-btn { 
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ui-border); 
+            color: var(--ui-text); padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;
+        }
+        .sidebar-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255,255,255,0.2); }
+        .sidebar-btn:active { transform: scale(0.96); }
+        .sidebar-btn kbd { background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; font-size: 0.65rem; font-family: inherit; }
+
+        /* Favorites Section */
+        .section-header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+        .section-header-row .section-title { margin-bottom: 0; }
+        .clear-btn { background: none; border: none; color: var(--ui-text-muted); font-size: 0.7rem; cursor: pointer; transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .clear-btn:hover { color: #ef4444; }
+
+        .fav-row { 
+            display: flex; align-items: center; gap: 6px; padding: 8px; 
+            background: rgba(255, 255, 255, 0.02); border: 1px solid transparent; 
+            border-radius: 8px; cursor: pointer; transition: all 0.2s; 
+        }
+        .fav-row:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255,255,255,0.1); }
+        .fav-swatch { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+        .fav-info { font-size: 0.75rem; color: var(--ui-text-muted); margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .empty-favs { font-size: 0.8rem; color: var(--ui-text-muted); padding: 8px 0; font-style: italic; opacity: 0.7; }
 
         /* Action Buttons */
         .icon-btn {
@@ -218,7 +247,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.1s, opacity 0.2s;
-            margin-top: auto;
+            margin-top: 24px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -334,6 +363,8 @@
             border: 2px solid color-mix(in srgb, var(--gen-text) 20%, transparent);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         .btn-secondary:hover { 
             background-color: color-mix(in srgb, var(--gen-text) 5%, transparent); 
@@ -392,7 +423,7 @@
             border-radius: 16px;
             border: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent);
             font-family: var(--gen-font-body);
-            backdrop-filter: blur(8px);
+            transform: translateZ(0); 
         }
         .ui-card h4 { font-family: var(--gen-font-head); font-size: 1.25rem; margin-bottom: 12px; }
         .ui-card p { font-size: 0.95rem; opacity: 0.8; margin-bottom: 20px; }
@@ -420,7 +451,7 @@
             bottom: 30px; left: 50%;
             transform: translateX(-50%) translateY(20px);
             background: var(--ui-text);
-            color: var(--ui-bg);
+            color: #0f1115;
             padding: 12px 24px;
             border-radius: 99px;
             font-weight: 600;
@@ -442,6 +473,11 @@
             .preview-scroll-wrapper { overflow: visible; }
             .preview-content { padding: 40px 20px 80px; }
             .hero h2 { font-size: 2.5rem; }
+            
+            .generate-btn kbd, .sidebar-btn kbd { display: none; }
+            .ui-grid { grid-template-columns: 1fr; } 
+            .gradient-boxes { flex-direction: column; }
+            #mouse-glow { display: none; }
         }
     </style>
 </head>
@@ -474,6 +510,22 @@
         <div class="section-title">Color Palette</div>
         <div class="list-group" id="color-list">
             <!-- Colors populated by JS -->
+        </div>
+
+        <!-- NEW ACTIONS SECTION -->
+        <div class="sidebar-actions">
+            <button class="sidebar-btn" onclick="saveToFavorites()">Save <kbd>S</kbd></button>
+            <button class="sidebar-btn" onclick="copyCSS()">CSS <kbd>C</kbd></button>
+            <button class="sidebar-btn" onclick="exportJSON()" style="grid-column: span 2;">Export JSON</button>
+        </div>
+
+        <!-- NEW FAVORITES SECTION -->
+        <div class="section-header-row">
+            <div class="section-title">Favorites</div>
+            <button class="clear-btn" onclick="clearFavorites()">Clear</button>
+        </div>
+        <div class="list-group" id="favorites-list" style="margin-bottom: 0;">
+            <!-- Favorites populated by JS -->
         </div>
 
         <button class="generate-btn" id="generate-btn">
@@ -588,7 +640,8 @@
                 primary: { val: '#3b82f6', locked: false },
                 secondary: { val: '#f59e0b', locked: false },
                 accent: { val: '#10b981', locked: false }
-            }
+            },
+            favorites: JSON.parse(localStorage.getItem('chromatype_favs')) || []
         };
 
         // --- MATH UTILS ---
@@ -643,6 +696,16 @@
             return (brightest + 0.05) / (darkest + 0.05);
         };
 
+        // --- GLOBAL TOAST SYSTEM ---
+        let toastTimeout;
+        const toastEl = document.getElementById('toast');
+        const showToast = (msg) => {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 2000);
+        };
+
         // --- GENERATION LOGIC ---
         const generatePalette = () => {
             let baseHue = Math.floor(Math.random() * 360);
@@ -689,6 +752,67 @@
             render();
         };
 
+        // --- NEW FEATURES (SAVE, COPY, EXPORT) ---
+        const saveToFavorites = () => {
+            const fav = {
+                colors: Object.fromEntries(COLOR_SLOTS.map(c => [c.id, state.colors[c.id].val])),
+                fonts: { head: state.fonts.head.val, body: state.fonts.body.val }
+            };
+            state.favorites.unshift(fav); 
+            if (state.favorites.length > 20) state.favorites.pop(); // Limit to 20 favs
+            localStorage.setItem('chromatype_favs', JSON.stringify(state.favorites));
+            renderFavorites();
+            showToast('Palette Saved to Favorites');
+        };
+
+        const loadFavorite = (index) => {
+            const fav = state.favorites[index];
+            COLOR_SLOTS.forEach(c => state.colors[c.id].val = fav.colors[c.id]);
+            state.fonts.head.val = fav.fonts.head;
+            state.fonts.body.val = fav.fonts.body;
+            render();
+            showToast('Favorite Loaded');
+        };
+
+        const clearFavorites = () => {
+            state.favorites = [];
+            localStorage.setItem('chromatype_favs', JSON.stringify([]));
+            renderFavorites();
+            showToast('Favorites Cleared');
+        };
+
+        const copyCSS = () => {
+            let css = `:root {\n`;
+            COLOR_SLOTS.forEach(c => css += `  ${c.var}: ${state.colors[c.id].val.toLowerCase()};\n`);
+            css += `  --gen-font-head: '${state.fonts.head.val}', serif;\n`;
+            css += `  --gen-font-body: '${state.fonts.body.val}', sans-serif;\n`;
+            css += `}`;
+            
+            const input = document.createElement('textarea');
+            input.value = css;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            
+            showToast('CSS Variables Copied');
+        };
+
+        const exportJSON = () => {
+            const data = {
+                colors: Object.fromEntries(COLOR_SLOTS.map(c => [c.id, state.colors[c.id].val])),
+                fonts: { heading: state.fonts.head.val, body: state.fonts.body.val }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chromatype-palette.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('JSON Exported Successfully');
+        };
+
         // --- UI & INTERACTIVITY ---
         const toggleLock = (type, key) => {
             state[type][key].locked = !state[type][key].locked;
@@ -706,6 +830,21 @@
             const feedback = btnElement.querySelector('.copy-feedback');
             feedback.classList.add('show');
             setTimeout(() => feedback.classList.remove('show'), 1500);
+        };
+
+        const renderFavorites = () => {
+            const favList = document.getElementById('favorites-list');
+            if (state.favorites.length === 0) {
+                favList.innerHTML = `<div class="empty-favs">No favorites saved yet. Press 'S' to save one.</div>`;
+                return;
+            }
+            
+            favList.innerHTML = state.favorites.map((fav, i) => `
+                <div class="fav-row" onclick="loadFavorite(${i})" title="Load Palette">
+                    ${COLOR_SLOTS.map(c => `<div class="fav-swatch" style="background-color: ${fav.colors[c.id]}"></div>`).join('')}
+                    <div class="fav-info">${fav.fonts.head}</div>
+                </div>
+            `).join('');
         };
 
         const render = () => {
@@ -756,21 +895,30 @@
                         </button>
                     </div>`;
             });
+            
+            renderFavorites();
         };
 
         // Event Listeners
         document.getElementById('generate-btn').addEventListener('click', generatePalette);
+        
         document.addEventListener('keydown', e => {
-            if (e.code === 'Space' && e.target === document.body) {
+            // Prevent shortcuts from triggering if user is in an input field (best practice)
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (e.code === 'Space') {
                 e.preventDefault();
                 generatePalette();
+            } else if (e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                saveToFavorites();
+            } else if (e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                copyCSS();
             }
         });
 
-        // Interactive Buttons (Ripple & Toast)
-        let toastTimeout;
-        const toastEl = document.getElementById('toast');
-        
+        // Interactive Buttons (Ripple & Toast integration)
         document.querySelectorAll('.btn-preview').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 // Ripple Effect
@@ -783,21 +931,16 @@
                 this.appendChild(ripple);
                 setTimeout(() => ripple.remove(), 600);
 
-                // Toast Fade-in
-                const msg = this.getAttribute('data-toast');
-                toastEl.textContent = msg;
-                toastEl.classList.add('show');
-                clearTimeout(toastTimeout);
-                toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 2000);
+                // Global Toast UI
+                showToast(this.getAttribute('data-toast'));
             });
         });
 
-        // Mouse Tracker for Glow Effect - Fixed alignment and tracking
+        // Mouse Tracker for Glow Effect
         const glow = document.getElementById('mouse-glow');
         
         document.addEventListener('mousemove', e => {
             glow.style.opacity = '1';
-            // Setting position using fixed/absolute coordinates 
             glow.style.left = `${e.clientX}px`;
             glow.style.top = `${e.clientY}px`;
         });
