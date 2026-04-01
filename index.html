@@ -10,9 +10,9 @@
     <style>
         :root {
             /* App UI Colors */
-            --ui-bg: #0f1115;
-            --ui-panel: #1a1d24;
-            --ui-border: #2e333d;
+            --ui-bg: transparent;
+            --ui-panel: rgba(15, 17, 21, 0.65);
+            --ui-border: rgba(255, 255, 255, 0.1);
             --ui-text: #e2e8f0;
             --ui-text-muted: #94a3b8;
             --ui-accent: #3b82f6;
@@ -32,25 +32,105 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--ui-bg);
-            color: var(--ui-text);
+            background-color: var(--gen-bg);
+            background-image: 
+                radial-gradient(circle at 15% 50%, color-mix(in srgb, var(--gen-primary) 12%, transparent) 0px, transparent 50%),
+                radial-gradient(circle at 85% 30%, color-mix(in srgb, var(--gen-secondary) 12%, transparent) 0px, transparent 50%),
+                radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--gen-accent) 10%, transparent) 0px, transparent 50%);
+            color: var(--gen-text);
             display: flex;
             height: 100vh;
             overflow: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            position: relative;
         }
 
-        /* Sidebar Controls */
+        /* Ambient Background Canvas */
+        .ambient-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        /* Floating Shapes */
+        .shape { 
+            position: absolute;
+            transition: background-color 0.4s ease, border-color 0.4s ease; 
+        }
+        
+        /* Blurred Ambient Shapes */
+        .shape-ambient { filter: blur(60px); opacity: 0.5; border-radius: 50%; }
+        .shape-1 { width: 40vw; height: 40vw; background-color: var(--gen-primary); top: -10%; left: -10%; animation: drift 15s ease-in-out infinite alternate; }
+        .shape-2 { width: 35vw; height: 35vw; background-color: var(--gen-secondary); bottom: -10%; right: -5%; animation: drift 20s ease-in-out infinite alternate-reverse; }
+        .shape-3 { width: 30vw; height: 30vw; background-color: var(--gen-accent); top: 30%; left: 40%; animation: drift-vertical 18s ease-in-out infinite alternate; }
+
+        /* Crisp Geometric Shapes */
+        .shape-geo { opacity: 0.6; filter: blur(1px); }
+        .shape-4 { width: 80px; height: 80px; border: 4px solid var(--gen-primary); border-radius: 20px; top: 15%; right: 15%; animation: float-rotate 12s linear infinite; }
+        .shape-5 { width: 40px; height: 40px; background-color: var(--gen-secondary); border-radius: 50%; bottom: 25%; left: 35%; animation: float-bounce 8s ease-in-out infinite alternate; }
+        .shape-6 { width: 120px; height: 120px; border: 3px dashed var(--gen-accent); border-radius: 50%; top: 60%; right: 10%; animation: spin 25s linear infinite; }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10vw, 5vh) scale(1.1); }
+        }
+        @keyframes drift-vertical {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-5vw, 15vh) scale(1.2); }
+        }
+        @keyframes float-rotate {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-40px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+        @keyframes float-bounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-60px) scale(0.9); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mouse Follower Glow */
+        #mouse-glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, color-mix(in srgb, var(--gen-accent) 15%, transparent) 0%, transparent 60%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            mix-blend-mode: multiply;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            #mouse-glow { mix-blend-mode: screen; }
+        }
+
+        /* Sidebar Controls - Integrated Glassmorphism */
         aside {
             width: 380px;
-            background-color: var(--ui-panel);
-            border-right: 1px solid var(--ui-border);
+            margin: 24px;
+            background: var(--ui-panel);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--ui-border);
+            border-radius: 24px;
             display: flex;
             flex-direction: column;
             padding: 24px;
             overflow-y: auto;
             flex-shrink: 0;
             z-index: 50;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            color: var(--ui-text);
         }
 
         .brand { margin-bottom: 32px; }
@@ -72,22 +152,23 @@
         .item-row {
             display: flex;
             align-items: center;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--ui-border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 8px 12px;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, background 0.2s;
         }
-        .item-row:hover { border-color: rgba(255,255,255,0.2); }
+        .item-row:hover { border-color: rgba(255,255,255,0.2); background: rgba(255, 255, 255, 0.08); }
 
         .swatch {
             width: 32px;
             height: 32px;
-            border-radius: 6px;
+            border-radius: 8px;
             margin-right: 12px;
-            border: 1px solid rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
             flex-shrink: 0;
             transition: background-color 0.4s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .item-info { flex-grow: 1; display: flex; flex-direction: column; }
@@ -131,10 +212,10 @@
 
         .generate-btn {
             background-color: var(--ui-text);
-            color: var(--ui-bg);
+            color: #0f1115;
             border: none;
-            border-radius: 8px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 16px;
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
@@ -144,6 +225,7 @@
             justify-content: center;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.1);
         }
         .generate-btn:active { transform: scale(0.98); }
         .generate-btn:hover { opacity: 0.9; }
@@ -155,60 +237,48 @@
             font-family: inherit;
         }
 
-        /* Interactive Preview Area */
+        /* Interactive Preview Area - Glass Content Pane */
         main {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             position: relative;
+            z-index: 10;
+            margin: 24px 24px 24px 0;
+            border-radius: 24px;
             overflow: hidden;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.05);
+            background: color-mix(in srgb, var(--gen-bg) 60%, transparent);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent);
         }
 
         .cta-banner {
-            background-color: #000;
-            color: #fff;
+            background-color: var(--gen-text);
+            color: var(--gen-bg);
             text-align: center;
             padding: 12px;
             font-size: 0.85rem;
-            border-bottom: 1px solid var(--ui-border);
             z-index: 20;
             position: relative;
+            font-weight: 500;
         }
-        .cta-banner a { color: #fff; font-weight: 600; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.4); }
-        .cta-banner a:hover { text-decoration-color: #fff; }
+        .cta-banner a { color: var(--gen-bg); font-weight: 700; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--gen-bg) 40%, transparent); }
+        .cta-banner a:hover { text-decoration-color: var(--gen-bg); }
 
         .preview-scroll-wrapper {
             flex-grow: 1;
             overflow-y: auto;
             overflow-x: hidden;
             position: relative;
-            background-color: var(--gen-bg);
-            background-image: 
-                radial-gradient(at 0% 0%, color-mix(in srgb, var(--gen-primary) 12%, transparent) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, color-mix(in srgb, var(--gen-secondary) 12%, transparent) 0px, transparent 50%);
-            color: var(--gen-text);
-            transition: background-color 0.4s ease, color 0.4s ease;
             scroll-behavior: smooth;
-        }
-
-        /* Mouse Follower Glow */
-        #mouse-glow {
-            position: fixed;
-            top: 0; left: 0;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, color-mix(in srgb, var(--gen-accent) 15%, transparent) 0%, transparent 70%);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 1;
-            transition: opacity 0.3s ease;
-            opacity: 0;
         }
 
         .preview-content {
             position: relative;
             z-index: 2;
-            padding: 10vh 40px 100px;
+            padding: 8vh 40px 100px;
             max-width: 1000px;
             margin: 0 auto;
             display: flex;
@@ -292,62 +362,11 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* Floating Shapes */
-        .decorative-shapes {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-        .shape { 
-            position: absolute;
-            transition: background-color 0.4s ease; 
-            opacity: 0.8;
-            filter: blur(2px);
-        }
-        .shape-1 { 
-            width: 120px; height: 120px; 
-            background-color: var(--gen-primary); 
-            border-radius: 100%; 
-            top: -10%; left: 10%;
-            animation: float-1 8s ease-in-out infinite; 
-        }
-        .shape-2 { 
-            width: 80px; height: 80px; 
-            background-color: var(--gen-secondary); 
-            border-radius: 20px; 
-            bottom: 10%; right: 15%;
-            animation: float-2 10s ease-in-out infinite alternate; 
-        }
-        .shape-3 { 
-            width: 150px; height: 150px; 
-            background-color: var(--gen-accent); 
-            border-radius: 100% 30% 100% 30%; 
-            top: 60%; left: 20%;
-            animation: pulse-rotate 12s linear infinite; 
-        }
-
-        @keyframes float-1 {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-30px) scale(1.05); }
-        }
-        @keyframes float-2 {
-            0% { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(-40px) rotate(45deg); }
-        }
-        @keyframes pulse-rotate {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.1); }
-            100% { transform: rotate(360deg) scale(1); }
-        }
-
         /* Extended Sections */
         .extended-section {
             width: 100%;
             padding: 60px 0;
-            border-top: 1px solid color-mix(in srgb, var(--gen-text) 15%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent);
             display: grid;
             grid-template-columns: 1fr;
             gap: 40px;
@@ -380,6 +399,7 @@
             border-radius: 16px;
             border: 1px solid color-mix(in srgb, var(--gen-text) 10%, transparent);
             font-family: var(--gen-font-body);
+            backdrop-filter: blur(8px);
         }
         .ui-card h4 { font-family: var(--gen-font-head); font-size: 1.25rem; margin-bottom: 12px; }
         .ui-card p { font-size: 0.95rem; opacity: 0.8; margin-bottom: 20px; }
@@ -422,14 +442,30 @@
 
         /* Media Queries */
         @media (max-width: 768px) {
-            body { flex-direction: column; }
-            aside { width: 100%; height: 45vh; border-right: none; border-bottom: 1px solid var(--ui-border); box-shadow: none; }
+            body { flex-direction: column; overflow: auto; }
+            .ambient-canvas { position: fixed; }
+            aside { width: auto; margin: 16px; flex-shrink: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+            main { margin: 0 16px 16px 16px; overflow: visible; height: auto; }
+            .preview-scroll-wrapper { overflow: visible; }
             .preview-content { padding: 40px 20px 80px; }
             .hero h2 { font-size: 2.5rem; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Ambient Background Layer -->
+    <div class="ambient-canvas">
+        <div class="shape shape-ambient shape-1"></div>
+        <div class="shape shape-ambient shape-2"></div>
+        <div class="shape shape-ambient shape-3"></div>
+        <div class="shape shape-geo shape-4"></div>
+        <div class="shape shape-geo shape-5"></div>
+        <div class="shape shape-geo shape-6"></div>
+    </div>
+
+    <!-- Mouse Follower -->
+    <div id="mouse-glow"></div>
 
     <aside>
         <div class="brand">
@@ -458,15 +494,9 @@
         </div>
         
         <div class="preview-scroll-wrapper" id="scroll-wrapper">
-            <div id="mouse-glow"></div>
             
             <div class="preview-content">
                 <section class="hero">
-                    <div class="decorative-shapes">
-                        <div class="shape shape-1"></div>
-                        <div class="shape shape-2"></div>
-                        <div class="shape shape-3"></div>
-                    </div>
                     
                     <h2>Design that feels <span>inevitable.</span></h2>
                     <p>A mathematically sound foundation for your next SaaS, portfolio, or digital product. Experience dynamic gradients, crisp typography, and fluid components.</p>
@@ -772,17 +802,16 @@
             });
         });
 
-        // Mouse Tracker for Glow Effect
+        // Mouse Tracker for Glow Effect - Fixed alignment and tracking
         const glow = document.getElementById('mouse-glow');
-        const scrollArea = document.getElementById('scroll-wrapper');
         
-        scrollArea.addEventListener('mousemove', e => {
+        document.addEventListener('mousemove', e => {
             glow.style.opacity = '1';
-            const rect = scrollArea.getBoundingClientRect();
-            glow.style.left = `${e.clientX - rect.left}px`;
-            glow.style.top = `${e.clientY - rect.top}px`;
+            // Setting position using fixed/absolute coordinates 
+            glow.style.left = `${e.clientX}px`;
+            glow.style.top = `${e.clientY}px`;
         });
-        scrollArea.addEventListener('mouseleave', () => glow.style.opacity = '0');
+        document.addEventListener('mouseleave', () => glow.style.opacity = '0');
 
         // Init
         generatePalette();
